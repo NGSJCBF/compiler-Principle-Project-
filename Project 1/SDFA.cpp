@@ -279,9 +279,20 @@ void sdfa::merge(const sdfa &other) {
     edges.insert(other.edges.begin(), other.edges.end());
 
     // Merge transitions from the other `sdfa`
+    int count=0;
     for (const auto &stateTransitions : other.v) {
-        map<string, set<int>> adjustedTransitions;
+        if(count==0&&size!=0){
+            auto &x=this->v[0];
+            for(auto&[name,nextState]:stateTransitions){
+                for (int target : nextState) {
+                    x[name].insert(target + stateOffset);  // Offset target state
+                }
+            }
+            count++;
+            continue;
+        }
 
+        map<string, set<int>> adjustedTransitions;
         // Adjust each transition to the new index offset
         for (const auto &[symbol, targets] : stateTransitions) {
             set<int> adjustedTargets;
@@ -297,9 +308,14 @@ void sdfa::merge(const sdfa &other) {
 
     // Adjust and merge accepting states
     for (int acceptState : other.accept) {
+        if(acceptState==0){
+            accept.insert(acceptState);
+            continue;
+        }
         accept.insert(acceptState + stateOffset);  // Offset accept state
     }
 
     // Update the size
     size += other.size;
+    size -= 1;
 }

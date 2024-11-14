@@ -22,8 +22,8 @@ int get_token(const string &line) {
 
 int check(const string &line){
     int k = 0;
-    if (line[0]=='_')
-        ++k;
+    // if (line[0]=='_')
+    //     ++k;
 
     while (line[k]=='\t'||line[k]==' ')
         ++k;

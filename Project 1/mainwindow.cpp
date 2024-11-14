@@ -318,12 +318,20 @@ void mainWindow::on_convertButton_clicked() {
 
     // 初步生成所有规则的 NFA，并存储在 nfas 中
     for (int i = 0; i < lines.count(); ++i) {
-        int k=0,it = 0;
         string ruleName;
-        it=check(lines[i].toStdString());
-        k = get_token(lines[i].toStdString());
-        ruleName = lines[i].toStdString().substr(it, k - it);
-        id.insert(ruleName);
+        int k=0,it = 0;
+        if(lines[0]!='_'){
+            it=check(lines[i].toStdString());
+            k = get_token(lines[i].toStdString());
+            names.insert( lines[i].toStdString().substr(it, k - it));
+            ruleName=lines[i].toStdString().substr(it, k - it);
+        }else{
+            it=check(lines[i].toStdString());
+            k = get_token(lines[i].toStdString());
+            ruleName = lines[i].toStdString().substr(it+1, k - it);
+            id.insert(ruleName);
+        }
+
         if(ruleName=="")
             continue;
         names.insert(ruleName);
@@ -336,12 +344,12 @@ void mainWindow::on_convertButton_clicked() {
         nfa temp_nfa = toNFA(id, lines[i].toStdString(), k);
         nfas[ruleName] = temp_nfa;
 
-        // 转换并存储为 DFA 和简化 DFA
-        dfa temp_dfa = toDFA(temp_nfa);
-        dfas[ruleName] = temp_dfa;
-        sdfa temp_sdfa(temp_dfa);
-        temp_sdfa.simplify(temp_dfa);
-        sdfas[ruleName] = temp_sdfa;
+        // // 转换并存储为 DFA 和简化 DFA
+        // dfa temp_dfa = toDFA(temp_nfa);
+        // dfas[ruleName] = temp_dfa;
+        // sdfa temp_sdfa(temp_dfa);
+        // temp_sdfa.simplify(temp_dfa);
+        // sdfas[ruleName] = temp_sdfa;
     }
 
     // 第二次遍历：对每条规则生成的 NFA 进行命名规则替换
@@ -351,6 +359,12 @@ void mainWindow::on_convertButton_clicked() {
         it=check(lines[i].toStdString());
         k = get_token(lines[i].toStdString());
         ruleName = lines[i].toStdString().substr(it, k - it);
+        if(ruleName[0]!='_'){
+            continue;
+        }else{
+            ruleName=ruleName.substr(1,ruleName.size());
+        }
+
         if(ruleName=="")
             continue;
         // 忽略 '=' 符号后的空格
@@ -370,21 +384,24 @@ void mainWindow::on_convertButton_clicked() {
     }
     outputNFAs(nfas);
     outputDFAs(dfas);
+
     //这里有问题
     sdfa tempsdfa;
     for(auto&[name,sdfa]:sdfas){
         tempsdfa.merge(sdfa);
     }
-    tempsdfa.simplify(tempsdfa);
+    // tempsdfa.simplify(tempsdfa);sdfa
     map<string, sdfa> sdfass;
     sdfass["all"]=tempsdfa;
-    outputSDFAs(sdfas);
+    outputSDFAs(sdfass);
 
-    //重新创建一个class用来合并sdfa
-    // meragesdfa tempMerage;
-    // for(auto&[name,sdfa]:sdfas){
-    //     tempMerage.merge(sdfa);
-    // }
+    /*
+    重新创建一个class用来合并sdfa
+    meragesdfa tempMerage;
+    for(auto&[name,sdfa]:sdfas){
+        tempMerage.merge(sdfa);
+    }
+    */
 
     string code=generateLexerCode(sdfas,names);
     QString Code=QString::fromStdString(code);
