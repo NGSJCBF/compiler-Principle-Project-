@@ -18,7 +18,6 @@ sdfa::sdfa(const dfa &a,int) {
     }
 
     // 存储转换关系，将 `dfa` 转换为编号后的形式
-    v.resize(size); // `v` 大小初始化为 `size`
     for(auto&x:a.v){
         map<string,set<int>>temp_v;
         for(auto&[name,destination]:x){

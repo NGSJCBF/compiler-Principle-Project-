@@ -123,7 +123,7 @@ nfa toNFA(const trie &id, const string &s, int &k) {
                     k++;//跳过{
                 }else if(s[k]=='\\'&&(s[k+1]=='t'||s[k+1]=='r'||s[k+1]=='n')){
                     string temp;
-                    temp=std::string(2,s[k])+s[k+1];
+                    temp=std::string(1,s[k])+s[k+1];
                     nfa charNFA(temp);  // 为单个字符创建一个 NFA
                     charClassNFA.alternative(charNFA);  // 添加到字符集 NFA
                     ++k;
@@ -518,14 +518,14 @@ string generateLexerCode(const map<string, sdfa> &sdfas, const set<string> &name
     codeStream << "unordered_map<int, string> finalStatements;" << endl;
     codeStream << "int main(int argc, char* argv[]) {" << endl;
     codeStream << "    if (argc < 2) {\n";
-    codeStream << "\t\tcerr << \"请提供一个 .tny 文件作为输入.\" << endl;";
-    codeStream << "\t\treturn 1;" << endl;
-    codeStream << "\t}" << endl;
-    codeStream << "\tifstream inputFile(argv[1]);" << endl;
-    codeStream << "\tif (!inputFile.is_open()) {" << endl;
-    codeStream << "    \tcerr << \"无法打开文件: \" << argv[1] << endl;" << endl;
-    codeStream << "\t\treturn 1;" << endl;
-    codeStream << "\t}" << endl;
+    codeStream << "    cerr << \"请提供一个 .tny 文件作为输入.\" << endl;";
+    codeStream << "    return 1;" << endl;
+    codeStream << "    }" << endl;
+    codeStream << "    ifstream inputFile(argv[1]);" << endl;
+    codeStream << "    if (!inputFile.is_open()) {" << endl;
+    codeStream << "        cerr << \"无法打开文件: \" << argv[1] << endl;" << endl;
+    codeStream << "    return 1;" << endl;
+    codeStream << "    }" << endl;
     codeStream << "    stringstream filecontent;" << endl;
     codeStream << "    filecontent << inputFile.rdbuf();" << endl;
     codeStream << "    string input;" << endl;
@@ -533,11 +533,11 @@ string generateLexerCode(const map<string, sdfa> &sdfas, const set<string> &name
     codeStream << "    unordered_set<int> currentStates = {0};" << endl;  // 改为集合
     codeStream << "    int tokenStart = 0;" << endl;
     codeStream << "    int length = input.length();" << endl;
-    codeStream << "\t\tint linepos = 0;" << endl;
+    codeStream << "    int linepos = 0;" << endl;
     codeStream << "    for (int i = 0; i < length; i++) {" << endl;
     codeStream << "        char c = input[i];" << endl;
-    codeStream << "\t\tstring resultToken;" << endl;
-    codeStream << "\t\tunordered_set<int> nextStates;" << endl;
+    codeStream << "        string resultToken;" << endl;
+    codeStream << "        unordered_set<int> nextStates;" << endl;
     codeStream << "        for (int state : currentStates) {" << endl;
     codeStream << "            switch (state) {" << endl;
 
@@ -586,7 +586,7 @@ string generateLexerCode(const map<string, sdfa> &sdfas, const set<string> &name
 
     // 初始化 finalStatements 的内容
     for (const auto &[state, dfaName] : finalStateNames) {
-        codeStream << "\t\tfinalStatements[" << state << "] = \"" << dfaName << "\";" << endl;
+        codeStream << "        finalStatements[" << state << "] = \"" << dfaName << "\";" << endl;
     }
 
     // 检查是否进入接受状态，识别 token
