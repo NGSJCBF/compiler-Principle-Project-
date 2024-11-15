@@ -35,5 +35,10 @@ private:
     void outputSDFAs(const map<string, sdfa> &);
     void outputDFAs(const map<string, dfa>&);
     void outputNFAs(const map<string, nfa>&);
+
+    void outputDFA(const dfa&);
+    void outputNFA(const nfa&);
+    void outputSDFA(const sdfa &);
+
 };
 #endif // MAINWINDOW_H

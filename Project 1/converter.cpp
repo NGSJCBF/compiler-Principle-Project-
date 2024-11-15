@@ -365,80 +365,108 @@ dfa toDFA(const nfa &a){
 
     return result;
 }
-
-string resultCode;
-
-// 生成词法分析器代码并返回为字符串
 /*
-string generateLexerCode(const map<string, sdfa> &sdfas) {
-    ostringstream codeStream;
-    size_t count=0;
-    vector<int>finals;
-    codeStream << "#include <iostream>" << endl;
-    codeStream << "#include <string>" << endl;
-    codeStream << "using namespace std;" << endl << endl;
-    codeStream << "int main() {" << endl;
-    codeStream << "    string input;" << endl;
-    codeStream << "    cin >> input;" << endl;
-    codeStream << "    int currentState = 0;" << endl;
-    codeStream << "    int length = input.length();" << endl;
-    codeStream << "    for (int i = 0; i < length; i++) {" << endl;
-    codeStream << "        char c = input[i];" << endl;
-    codeStream << "        switch (currentState) {" << endl;
-
-    for (const auto &[name, automaton] : sdfas) {
-
-        for (int state = 0; state < automaton.size; ++state) {
-            codeStream << "            case " << state+count << ":" << endl;
-            codeStream << "                switch (c) {" << endl;
-
-            // Write each transition for this state
-            for (const auto &[symbol, nextState] : automaton.v[state]) {
-                codeStream << "                    case '" << symbol << "':" << endl;
-                codeStream << "                        currentState = " << nextState+count << ";" << endl;
-                codeStream << "                        break;" << endl;
-            }
-
-            codeStream << "                    default:" << endl;
-            codeStream << "                        cout << \"Error: Invalid input character '\" << c << \"'\" << endl;" << endl;
-            codeStream << "                        continue;" << endl;
-            codeStream << "                }" << endl;
-            codeStream << "                break;" << endl;
-        }
-        for(auto &accept:automaton.accept){
-            finals.push_back(accept+count+1);
-        }
-        count+=automaton.v.size();
-    }
-
-    codeStream << "        }" << endl;
-    codeStream << "    }" << endl;
-
-    codeStream << "    switch (currentState) {" << endl;
-    int i=0;
-    for (const auto &[name, automaton] : sdfas) {
-        for (const int state : automaton.accept) {
-            codeStream << "        case " << finals[i++]-1 << ":" << endl;
-            codeStream << "            cout << \"Accepted\" << endl;" << endl;
-            codeStream << "            return 0;" << endl;
+string construct_code() {
+    int start_state;
+    set<int> end;
+    string code;
+    code = "#include <iostream>\n";
+    code += "#include <fstream>\n";
+    code += "using namespace std;\n";
+    // code += "ifstream src_file(\"resources/source.txt\", ios::in);\n";
+    // code += "ofstream ans_file(\"resources/ans.txt\", ios::out);\n";
+    code += "ifstream src_file(\"resources/source.txt\", ios::in);\n";
+    code += "ofstream ans_file(\"resources/ans.txt\", ios::out);\n";
+    code += "string buf;\n";
+    code += "string buf_suc;\n";
+    code += "string buf_err;\n";
+    code += "string token;\n";
+    code += "string token_suc;\n";
+    code += "int read_cnt;\n";
+    code += R"(
+void skip_Whitespace() {
+    char c;
+    while (src_file.get(c)) {
+        read_cnt++;
+        if (c == '\n') read_cnt++;
+        if (!isspace(c)) {
+            read_cnt--;
+            src_file.unget();
+            break;
         }
     }
-
-    codeStream << "        default:" << endl;
-    codeStream << "            cout << \"Not Accepted\" << endl;" << endl;
-    codeStream << "    }" << endl;
-    codeStream << "    return 0;" << endl;
-    codeStream << "}" << endl;
-
-    resultCode = codeStream.str();
-    return resultCode;
 }
 
+)";
+    for (size_t j = 0; j < minDFA_list_arr.size(); j++) {
+        for (auto x : minDFA_list_arr[j]) {
+            if (x.init)
+                start_state = x.id;
+            if (x.accept) {
+                end.insert(x.id);
+            }
+        }
+        code += "bool check_" + id_arr[j] + "() {\n";
+        code += "\tint state = " + to_string(start_state) + ";\n";
+        code += "\tchar c;\n";
+        code += "\twhile((c = src_file.peek()) != EOF) {\n";
+        code += "\t\tswitch(state) {\n";
+        for (size_t i = 0; i < minDFA_list_arr[j].size(); i++) {
+            code += "\t\t\tcase " + to_string(i) + ":\n";
+            if (minDFA_list_arr[j][i].DFAid.empty()) {
+                code += "\t\t\t\ttoken = \"" + id_arr[j] + "\";\n";
+                code += "\t\t\t\treturn true;\n";
+                continue;
+            }
+            code += "\t\t\t\tswitch(c) {\n";
+            for (auto x : minDFA_list_arr[j][i].DFAid) {
+                code += "\t\t\t\t\tcase '" + string(1, x.worker) + "': \n" + "\t\t\t\t\t\tstate = " + to_string(x.id) + ";\n" + "\t\t\t\t\t\tbuf += c;\n" + "\t\t\t\t\t\tsrc_file.get(c);\n" + "\t\t\t\t\t\tbreak;\n";
+            }
+            code += "\t\t\t\t\tdefault :\n";
+            if (minDFA_list_arr[j][i].accept == true) {
+                code += "\t\t\t\t\t\ttoken = \"" + id_arr[j] + "\";\n";
+                code += "\t\t\t\t\t\treturn true;\n";
+            }
+            else
+                code += "\t\t\t\t\t\treturn false;\n";
+            code += "\t\t\t\t}\n";
+            code += "\t\t\t\tbreak;\n";
+        }
+        code += "\t\t}\n";
+        code += "\t}\n";
+        code += "}\n\n";
+    }
+    code += "int main() {\n";
+    code += "\tbool flag;\n";
+    code += "\tchar c;\n";
+    code += "\twhile((c = src_file.peek()) != EOF) {\n";
+    code += "\t\ttoken_suc.clear();\n";
+    code += "\t\tbuf_suc.clear();\n";
+    for (size_t i = 0; i < minDFA_list_arr.size(); i++) {
+        code += "\t\tif (!check_" + id_arr[i] + "())\n";
+        code += "\t\t\tbuf_err = buf;\n";
+        code += "\t\telse if (buf.size() > buf_suc.size()) {\n";
+        code += "\t\t\tbuf_suc = buf;\n";
+        code += "\t\t\ttoken_suc = token;\n";
+        code += "\t\t}\n";
+        code += "\t\tbuf.clear();\n";
+        code += "\t\tsrc_file.seekg(read_cnt, ios::beg);\n";
+    }
+    code += "\t\tif (buf_suc.empty()) {\n";
+    code += "\t\t\tans_file << buf << \"UNKNOWN \" << buf_err << endl;\n";
+    code += "\t\t\texit(1);\n";
+    code += "\t\t} else\n";
+    code += "\t\t\tans_file << token_suc << \" \" << buf_suc << endl;\n";
+    code += "\t\tread_cnt += buf_suc.size();\n";
+    code += "\t\tsrc_file.seekg(read_cnt, ios::beg);\n";
+    code += "\t\tskip_Whitespace();\n";
+    code += "\t}\n";
+    code += "}\n";
+    return code;
+}
 */
-
-
-
 string generateLexerCode(const map<string, sdfa> &sdfas, const set<string> &names) {
+    string resultCode;
     ostringstream codeStream;
     size_t stateOffset = 0;
     unordered_map<int, string> finalStateNames; // 记录接受状态和对应DFA名称

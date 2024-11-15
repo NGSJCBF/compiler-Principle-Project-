@@ -179,63 +179,6 @@ void mainWindow::outputDFAs(const map<string, dfa> &dfas) {
     // 重新启用更新
     ui->dfaTable->setUpdatesEnabled(true);
 }
-/*
-void mainWindow::outputSDFAs(const map<string, sdfa> &sdfas) {
-    ui->sdfaTable->clear();  // 清空表格内容和表头
-    ui->sdfaTable->setRowCount(0);
-
-    QStringList header;
-    header << "Rule" << "State";  // 初始化前两列表头
-    map<string, int> CF;
-
-    // 禁用更新以提高性能
-    ui->sdfaTable->setUpdatesEnabled(false);
-
-    // 提前计算最大列数并设置转换符号的列索引
-    int nextColumnIndex = 2;  // 从第三列开始分配
-    for (const auto &[ruleName, a] : sdfas) {
-        for (const auto &s : a.edges) {
-            if (CF.find(s) == CF.end()) {
-                header << QString::fromStdString(s);
-                CF[s] = nextColumnIndex++;
-            }
-        }
-    }
-
-    // 设置列数和表头
-    ui->sdfaTable->setColumnCount(header.size());
-    ui->sdfaTable->setHorizontalHeaderLabels(header);
-    ui->sdfaTable->verticalHeader()->setVisible(false);
-
-    int count=0;
-    for (const auto &[ruleName, a] : sdfas) {
-
-        for (int i = 0; i < a.size; ++i) {
-            ui->sdfaTable->insertRow(ui->sdfaTable->rowCount());
-
-            QTableWidgetItem *ruleItem = new QTableWidgetItem(QString::fromStdString(ruleName));
-            ui->sdfaTable->setItem(ui->sdfaTable->rowCount() - 1, 0, ruleItem);
-
-            QString start(QString::number(i+count));
-            if (i == 0) start.append("\u2190");
-            QTableWidgetItem *item = new QTableWidgetItem(start);
-            ui->sdfaTable->setItem(ui->sdfaTable->rowCount() - 1, 1, item);
-            if (a.accept.count(i) != 0) item->setBackground(Qt::green);
-
-            auto m = a.v[i];
-            for (auto &s : a.edges) {
-                auto it = m.find(s);
-                if (it != m.end()) {
-                    item = new QTableWidgetItem(QString::number(it->second));
-                    ui->sdfaTable->setItem(ui->sdfaTable->rowCount() - 1, CF[s], item);
-                }
-            }
-        }
-        count+=a.size;
-    }
-    // 重新启用更新
-    ui->sdfaTable->setUpdatesEnabled(true);
-}*/
 
 void mainWindow::outputSDFAs(const map<string, sdfa> &sdfas) {
     ui->sdfaTable->clear();  // Clear table content and headers
@@ -301,6 +244,145 @@ void mainWindow::outputSDFAs(const map<string, sdfa> &sdfas) {
     ui->sdfaTable->setUpdatesEnabled(true);
 }
 
+void mainWindow::outputNFA(const nfa &a)
+{
+    ui->nfaTable->setRowCount(0);
+
+    int n=a.edges.size();
+    ui->nfaTable->setColumnCount(n+1);
+
+    QStringList header;
+    header<<"State";
+    for (auto &s:a.edges){
+        header<<s.c_str();
+    }
+
+    ui->nfaTable->setHorizontalHeaderLabels(header);
+    ui->nfaTable->verticalHeader()->setVisible(false);
+
+    QTableWidgetItem *item[n+1];
+    for (int i=0;i<=a.size;++i){
+        ui->nfaTable->insertRow(i);
+
+        QString start;
+        start.append(QString::number(i));
+        if (i==0) start.append("\u2190");
+        item[0]=new QTableWidgetItem(start);
+        ui->nfaTable->setItem(i,0,item[0]);
+
+        auto m=a.v[i];
+        int j=1;
+        for (auto &s:a.edges){
+            auto it=m.find(s);
+            if (it!=m.end()){
+                auto tmp_it=it->second.begin();
+
+                QString tmp_str;
+                tmp_str.append(QString::number(*tmp_it));
+
+                for (++tmp_it;tmp_it!=it->second.end();++tmp_it){
+                    tmp_str.append(QString(",%1").arg(*tmp_it));
+                }
+
+                item[j]=new QTableWidgetItem(tmp_str);
+                ui->nfaTable->setItem(i,j,item[j]);
+            }
+            ++j;
+        }
+    }
+
+    ui->nfaTable->item(a.size,0)->setBackground(Qt::green);
+}
+
+void mainWindow::outputDFA(const dfa &a)
+{
+    ui->dfaTable->setRowCount(0);
+
+    int n=a.edges.size();
+    ui->dfaTable->setColumnCount(n+1);
+
+    QStringList header;
+    header<<"State";
+    for (auto &s:a.edges){
+        header<<s.c_str();
+    }
+
+    ui->dfaTable->setHorizontalHeaderLabels(header);
+    ui->dfaTable->verticalHeader()->setVisible(false);
+
+    QTableWidgetItem *item[n+1];
+    for (int i=0;i<a.size;++i){
+        ui->dfaTable->insertRow(i);
+
+        QString start;
+        start.append(a.state_set_str(i).c_str());
+        if (i==0) start.append("\u2190");
+        item[0]=new QTableWidgetItem(start);
+        ui->dfaTable->setItem(i,0,item[0]);
+        if (a.accept.count(i)!=0) ui->dfaTable->item(i,0)->setBackground(Qt::green);
+
+        auto m=a.v[i];
+        int j=1;
+        for (auto &s:a.edges){
+            QString tmp_str(a.state_set_str(i,s).c_str());
+            if (!tmp_str.isEmpty()){
+                item[j]=new QTableWidgetItem(tmp_str);
+                ui->dfaTable->setItem(i,j,item[j]);
+            }
+            ++j;
+        }
+    }
+}
+
+void mainWindow::outputSDFA(const sdfa &a){
+    ui->sdfaTable->setRowCount(0);
+
+    int n=a.edges.size();
+    ui->sdfaTable->setColumnCount(n+1);
+
+    QStringList header;
+    header<<"State";
+    for (auto &s:a.edges){
+        header<<s.c_str();
+    }
+
+    ui->sdfaTable->setHorizontalHeaderLabels(header);
+    ui->sdfaTable->verticalHeader()->setVisible(false);
+
+    QTableWidgetItem *item[n+1];
+    for (int i=0;i<a.size;++i){
+        ui->sdfaTable->insertRow(i);
+
+        QString start(QString::number(i));
+        if (i==0) start.append("\u2190");
+        item[0]=new QTableWidgetItem(start);
+        ui->sdfaTable->setItem(i,0,item[0]);
+        if (a.accept.count(i)!=0)
+            ui->sdfaTable->item(i,0)->setBackground(Qt::green);
+
+        auto m=a.v[i];
+        int j=1;
+        for (auto &s : a.edges) {
+            auto it = m.find(s);
+            if (it != m.end()) {
+                QString temp;
+                bool first = true;
+
+                for (auto &x : it->second) {
+                    if (!first) {
+                        temp += ",";
+                    }
+                    temp += QString::number(x);
+                    first = false;
+                }
+
+                item[j] = new QTableWidgetItem(temp);
+                ui->sdfaTable->setItem(i, j, item[j]);
+            }
+            ++j;
+        }
+    }
+}
 
 void mainWindow::on_convertButton_clicked() {
     QString text = ui->textEditor->toPlainText();
@@ -315,7 +397,7 @@ void mainWindow::on_convertButton_clicked() {
     map<string, dfa> dfas;
     map<string, sdfa> sdfas;
     set<string> names;
-
+    nfa result_nfa;
     // 初步生成所有规则的 NFA，并存储在 nfas 中
     for (int i = 0; i < lines.count(); ++i) {
         string ruleName;
@@ -343,13 +425,7 @@ void mainWindow::on_convertButton_clicked() {
         // 根据初始规则生成 NFA（无替换）
         nfa temp_nfa = toNFA(id, lines[i].toStdString(), k);
         nfas[ruleName] = temp_nfa;
-
-        // // 转换并存储为 DFA 和简化 DFA
-        // dfa temp_dfa = toDFA(temp_nfa);
-        // dfas[ruleName] = temp_dfa;
-        // sdfa temp_sdfa(temp_dfa);
-        // temp_sdfa.simplify(temp_dfa);
-        // sdfas[ruleName] = temp_sdfa;
+        result_nfa.alternative(temp_nfa);
     }
 
     // 第二次遍历：对每条规则生成的 NFA 进行命名规则替换
@@ -382,18 +458,25 @@ void mainWindow::on_convertButton_clicked() {
         temp_sdfa.simplify(temp_dfa);
         sdfas[ruleName] = temp_sdfa;
     }
-    outputNFAs(nfas);
-    outputDFAs(dfas);
+    dfa temp_dfa = toDFA(result_nfa);
+    sdfa temp_sdfa(temp_dfa);
+    temp_sdfa.simplify(temp_dfa);
+    outputNFA(result_nfa);
+    outputDFA(temp_dfa);
+    outputSDFA(temp_sdfa);
 
-    //这里有问题
-    sdfa tempsdfa;
-    for(auto&[name,sdfa]:sdfas){
-        tempsdfa.merge(sdfa);
-    }
-    // tempsdfa.simplify(tempsdfa);sdfa
-    map<string, sdfa> sdfass;
-    sdfass["all"]=tempsdfa;
-    outputSDFAs(sdfass);
+    // outputNFAs(nfas);
+    // outputDFAs(dfas);
+
+    // //这里有问题
+    // sdfa tempsdfa;
+    // for(auto&[name,sdfa]:sdfas){
+    //     tempsdfa.merge(sdfa);
+    // }
+    // // tempsdfa.simplify(tempsdfa);sdfa
+    // map<string, sdfa> sdfass;
+    // sdfass["all"]=tempsdfa;
+    // outputSDFAs(sdfas);
 
     /*
     重新创建一个class用来合并sdfa
@@ -402,7 +485,6 @@ void mainWindow::on_convertButton_clicked() {
         tempMerage.merge(sdfa);
     }
     */
-
     string code=generateLexerCode(sdfas,names);
     QString Code=QString::fromStdString(code);
     ui->Code->setText(Code);
