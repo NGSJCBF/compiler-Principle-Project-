@@ -4,6 +4,46 @@ sdfa::sdfa(const dfa &a){
     edges=a.edges;
     accept=a.accept;
 }
+sdfa::sdfa(const dfa &a,int) {
+    size = 0;
+    edges = a.edges;
+
+    // 映射每个状态集合到唯一编号
+    map<set<int>, int> state_map;
+    for (int i = 0; i < a.state_Set.size(); ++i) {
+        const auto &state_set = a.state_Set[i];
+        if (state_map.find(state_set) == state_map.end()) {
+            state_map[state_set] = size++;  // 为新状态集合分配编号
+        }
+    }
+
+    // 存储转换关系，将 `dfa` 转换为编号后的形式
+    v.resize(size); // `v` 大小初始化为 `size`
+    for(auto&x:a.v){
+        map<string,set<int>>temp_v;
+        for(auto&[name,destination]:x){
+            temp_v[name].insert(destination);
+        }
+        v.push_back(temp_v);
+    }
+    // for (int i = 0; i < a.state_Set.size(); ++i) {
+    //     int src_id = state_map[a.state_Set[i]];  // 当前状态的编号
+    //     for (const auto &edge_pair : a.v[i]) {
+    //         const string &edge = edge_pair.first;
+    //         const int &dest_states = edge_pair.second;
+
+    //         int dest_id = state_map[dest_states];  // 获取目标状态的编号
+
+    //         v[src_id][edge].insert(dest_id);       // 使用编号存储转换
+    //     }
+    // }
+
+    // 处理接受状态，假设 `a.accept` 是 `int` 类型
+    for (const auto &accept_state : a.accept) {
+        accept.insert(accept_state);
+    }
+}
+
 
 void sdfa::simplify(const dfa &a,const map<string,sdfa>){
     queue<set<int>> q;

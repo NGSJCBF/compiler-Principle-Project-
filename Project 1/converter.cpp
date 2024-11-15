@@ -365,6 +365,42 @@ dfa toDFA(const nfa &a){
 
     return result;
 }
+
+/*
+dfa toDFA(const nfa &a,int num) {
+    set<int> tmp_set;
+    e_closure(a, 0, tmp_set); // 初始化DFA首个结点
+
+
+    int state_count = 0;
+    state_map[tmp_set] = state_count++; // 将初始状态映射到编号0
+
+    dfa result(tmp_set, del_epsilon(a.edges), a.size);
+
+    for (int i = 0; i < result.size; ++i) {
+        for (auto &str : result.edges) {
+            tmp_set.clear();
+            e_closure(a, move(a, result.state_Set[i], str), tmp_set); // 计算当前DFA节点的epsilon闭包
+            if (tmp_set.empty()) continue;
+            result.append(tmp_set, a.size); // 添加新状态到DFA
+            result.insert(i, str, tmp_set);
+        }
+    }
+
+    // 输出状态编号与状态集合的映射
+    cout << "State mappings (DFA state -> NFA states):\n";
+    for (const auto &entry : state_map) {
+        cout << "DFA state " << entry.second << " -> NFA states {";
+        for (auto nfa_state : entry.first) {
+            cout << nfa_state << " ";
+        }
+        cout << "}\n";
+    }
+
+    return result;
+}
+*/
+
 /*
 string construct_code() {
     int start_state;

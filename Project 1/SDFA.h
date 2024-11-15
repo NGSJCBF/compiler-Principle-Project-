@@ -18,6 +18,7 @@ public:
     vector<map<string,set<int>>> v;
     sdfa(){size=0;};
     sdfa(const dfa &);
+    sdfa(const dfa&,int);
     void simplify(const dfa &);
     void simplify(const dfa &,const map<string,sdfa>);
     void simplify(const sdfa &);

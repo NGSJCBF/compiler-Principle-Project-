@@ -385,6 +385,7 @@ void mainWindow::outputSDFA(const sdfa &a){
 }
 
 void mainWindow::on_convertButton_clicked() {
+
     QString text = ui->textEditor->toPlainText();
     if (text.isEmpty()) {
         QMessageBox::warning(this, "Warning", "The regular expressions can't be empty!");
@@ -459,11 +460,12 @@ void mainWindow::on_convertButton_clicked() {
         sdfas[ruleName] = temp_sdfa;
     }
     dfa temp_dfa = toDFA(result_nfa);
-    sdfa temp_sdfa(temp_dfa);
-    temp_sdfa.simplify(temp_dfa);
+    sdfa temp_sdfa1(temp_dfa,1);
+    sdfa temp_sdfa2(temp_dfa);
+    temp_sdfa2.simplify(temp_dfa);
     outputNFA(result_nfa);
     outputDFA(temp_dfa);
-    outputSDFA(temp_sdfa);
+    outputSDFA(temp_sdfa2);
 
     // outputNFAs(nfas);
     // outputDFAs(dfas);
@@ -474,8 +476,8 @@ void mainWindow::on_convertButton_clicked() {
     //     tempsdfa.merge(sdfa);
     // }
     // // tempsdfa.simplify(tempsdfa);sdfa
-    // map<string, sdfa> sdfass;
-    // sdfass["all"]=tempsdfa;
+    map<string, sdfa> sdfass;
+    sdfass["all"]=temp_sdfa1;
     // outputSDFAs(sdfas);
 
     /*
@@ -485,7 +487,7 @@ void mainWindow::on_convertButton_clicked() {
         tempMerage.merge(sdfa);
     }
     */
-    string code=generateLexerCode(sdfas,names);
+    string code=generateLexerCode(sdfass,names);
     QString Code=QString::fromStdString(code);
     ui->Code->setText(Code);
 }
