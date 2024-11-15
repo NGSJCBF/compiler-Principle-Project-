@@ -48,7 +48,7 @@ dfa toDFA(const nfa &);
 // dfa toDFA(const nfa &a,int num);
 
 //代码生成
-string generateLexerCode(const map<string, sdfa> &sdfas,const set<string>&);
+string generateLexerCode(const map<string, sdfa> &sdfas);
 
 // map<set<int>, int> state_map; // 状态集合到编号的映射表
 

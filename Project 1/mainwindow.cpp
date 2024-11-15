@@ -384,6 +384,7 @@ void mainWindow::outputSDFA(const sdfa &a){
     }
 }
 
+
 void mainWindow::on_convertButton_clicked() {
 
     QString text = ui->textEditor->toPlainText();
@@ -437,7 +438,7 @@ void mainWindow::on_convertButton_clicked() {
         k = get_token(lines[i].toStdString());
         ruleName = lines[i].toStdString().substr(it, k - it);
         if(ruleName[0]!='_'){
-            continue;
+
         }else{
             ruleName=ruleName.substr(1,ruleName.size());
         }
@@ -459,6 +460,7 @@ void mainWindow::on_convertButton_clicked() {
         temp_sdfa.simplify(temp_dfa);
         sdfas[ruleName] = temp_sdfa;
     }
+
     dfa temp_dfa = toDFA(result_nfa);
     sdfa temp_sdfa1(temp_dfa,1);
     sdfa temp_sdfa2(temp_dfa);
@@ -477,7 +479,7 @@ void mainWindow::on_convertButton_clicked() {
     // }
     // // tempsdfa.simplify(tempsdfa);sdfa
     map<string, sdfa> sdfass;
-    sdfass["all"]=temp_sdfa1;
+    sdfass["all"]=temp_sdfa2;
     // outputSDFAs(sdfas);
 
     /*
@@ -487,7 +489,7 @@ void mainWindow::on_convertButton_clicked() {
         tempMerage.merge(sdfa);
     }
     */
-    string code=generateLexerCode(sdfass,names);
+    string code=generateLexerCode(sdfas);
     QString Code=QString::fromStdString(code);
     ui->Code->setText(Code);
 }

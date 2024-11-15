@@ -5,7 +5,7 @@ std::set<char> visiableChar = {'!', '"', '#', '$', '%', '&', '\'', '(', ')', '*'
                               '@', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
                               'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '[', '\\', ']', '^', '_',
                               '`', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
-                              'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '{', '|', '}', '~'};
+                              'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '{', '|', '}', '~',' '};
 
 int get_token(const string &line) {
     int k = 0;
@@ -175,9 +175,13 @@ nfa toNFA(const trie &id, const string &s, int &k) {
                 result.alternative(cur);
                 return result;
             }
-            return cur;
+            result.alternative(cur);
+            return result;
         }
-        if(s[k]=='[')continue;
+        if(s[k]=='['){
+            result.alternative(cur);
+            continue;
+        }
         ++k;
         result.alternative(cur);
         exist = true;
@@ -304,7 +308,10 @@ nfa toNFA(const trie &id, const string &s, int &k, const map<string, nfa> &nfas)
             }
             return cur;
         }
-        if(s[k]=='[')continue;
+        if(s[k]=='['){
+            result.alternative(cur);
+            continue;
+        }
         ++k;
         result.alternative(cur);
         exist = true;
@@ -501,119 +508,103 @@ void skip_Whitespace() {
     return code;
 }
 */
-string generateLexerCode(const map<string, sdfa> &sdfas, const set<string> &names) {
-    string resultCode;
+string generateLexerCode(const map<string, sdfa> &sdfas) {
     ostringstream codeStream;
-    size_t stateOffset = 0;
-    unordered_map<int, string> finalStateNames; // 记录接受状态和对应DFA名称
 
-    codeStream << "#include <iostream>" << endl;
-    codeStream << "#include <string>" << endl;
-    codeStream << "#include <unordered_map>" << endl;
-    codeStream << "#include <unordered_set>" << endl;
-    codeStream << "#include <fstream>" << endl;
-    codeStream << "#include <sstream>" << endl;
-    codeStream << "using namespace std;" << endl << endl;
+    // Include necessary libraries
+    codeStream << "#include <iostream>\n";
+    codeStream << "#include <fstream>\n";
+    codeStream << "#include <unordered_map>\n";
+    codeStream << "#include <string>\n";
+    codeStream << "using namespace std;\n\n";
 
-    codeStream << "unordered_map<int, string> finalStatements;" << endl;
-    codeStream << "int main(int argc, char* argv[]) {" << endl;
-    codeStream << "    if (argc < 2) {\n";
-    codeStream << "    cerr << \"请提供一个 .tny 文件作为输入.\" << endl;";
-    codeStream << "    return 1;" << endl;
-    codeStream << "    }" << endl;
-    codeStream << "    ifstream inputFile(argv[1]);" << endl;
-    codeStream << "    if (!inputFile.is_open()) {" << endl;
-    codeStream << "        cerr << \"无法打开文件: \" << argv[1] << endl;" << endl;
-    codeStream << "    return 1;" << endl;
-    codeStream << "    }" << endl;
-    codeStream << "    stringstream filecontent;" << endl;
-    codeStream << "    filecontent << inputFile.rdbuf();" << endl;
-    codeStream << "    string input;" << endl;
-    codeStream << "    input = filecontent.str();" << endl;
-    codeStream << "    unordered_set<int> currentStates = {0};" << endl;  // 改为集合
-    codeStream << "    int tokenStart = 0;" << endl;
-    codeStream << "    int length = input.length();" << endl;
-    codeStream << "    int linepos = 0;" << endl;
-    codeStream << "    for (int i = 0; i < length; i++) {" << endl;
-    codeStream << "        char c = input[i];" << endl;
-    codeStream << "        string resultToken;" << endl;
-    codeStream << "        unordered_set<int> nextStates;" << endl;
-    codeStream << "        for (int state : currentStates) {" << endl;
-    codeStream << "            switch (state) {" << endl;
+    // Define helper functions
+    codeStream << R"(
+void skipWhitespace(ifstream &src_file) {
+    char c;
+    while (src_file.get(c)) {
+        if (!isspace(c)) {
+            src_file.unget();
+            break;
+        }
+    }
+}\n
+)";
 
-    // 生成DFA的每个状态的switch-case
+    // Define DFA check functions for each `sdfa`
     for (const auto &[name, automaton] : sdfas) {
-        for (int state = 0; state < automaton.size; ++state) {
-            codeStream << "                case " << state + stateOffset << ":" << endl;
-            codeStream << "                    switch (c) {" << endl;
+        codeStream << "bool check_" << name << "(ifstream &src_file, string &buf, string &token) {\n";
+        codeStream << "    int state = 0;\n";
+        codeStream << "    char c;\n";
+        codeStream << "    while ((c = src_file.peek()) != EOF) {\n";
+        codeStream << "        switch (state) {\n";
 
-            for (const auto &[symbol, nextStates] : automaton.v[state]) {
-                if (symbol.size() == 1) {  // 单字符情况
-                    if (symbol == "\\" || symbol == "\'") {
-                        codeStream << "                        case '\\" << symbol << "':" << endl;
-                    } else {
-                        codeStream << "                        case '" << symbol << "':" << endl;
+        for (size_t i = 0; i < automaton.size; ++i) {
+            codeStream << "            case " << i << ":\n";
+            codeStream << "                switch (c) {\n";
+
+            for (const auto &[symbol, nextStates] : automaton.v[i]) {
+                if (symbol.size() == 1) {
+                    codeStream << "                    case '" << symbol << "':\n";
+                    for (int nextState : nextStates) {
+                        codeStream << "                        state = " << nextState << ";\n";
+                        codeStream << "                        buf += c;\n";
+                        codeStream << "                        src_file.get(c);\n";
+                        codeStream << "                        break;\n";
                     }
-                } else {  // 特殊字符集处理
-                    codeStream << "                        case '" << symbol << "':" << endl;
                 }
-
-                for (int nextState : nextStates) {
-                    codeStream << "                            nextStates.insert(" << nextState + stateOffset << ");" << endl;
-                }
-                codeStream << "                            break;" << endl;
             }
-
-            codeStream << "                        default:" << endl;
-            codeStream << "                            cout << \"Error: Invalid input character '\" << c << \"'\" << endl;" << endl;
-            codeStream << "                            return -1;" << endl;
-            codeStream << "                    }" << endl;
-            codeStream << "                    break;" << endl;
+            codeStream << "                    default:\n";
+            if (automaton.accept.count(i)) {
+                codeStream << "                        token = \"" << name << "\";\n";
+                codeStream << "                        return true;\n";
+            } else {
+                codeStream << "                        return false;\n";
+            }
+            codeStream << "                }\n";
+            codeStream << "                break;\n";
         }
 
-        // 记录接受状态和对应DFA名称
-        for (int accept : automaton.accept) {
-            finalStateNames[accept + stateOffset] = name;
-        }
-        stateOffset += automaton.size;
+        codeStream << "        }\n";
+        codeStream << "    }\n";
+        codeStream << "    return false;\n";
+        codeStream << "}\n\n";
     }
 
-    codeStream << "            }" << endl;
-    codeStream << "        }" << endl;
+    // Main function
+    codeStream << "int main() {\n";
+    codeStream << "    ifstream src_file(\"resources/source.txt\", ios::in);\n";
+    codeStream << "    ofstream ans_file(\"resources/ans.txt\", ios::out);\n";
+    codeStream << "    if (!src_file.is_open()) {\n";
+    codeStream << "        cerr << \"Error: Unable to open source file.\" << endl;\n";
+    codeStream << "        return 1;\n";
+    codeStream << "    }\n";
+    codeStream << "    string buf, buf_suc, buf_err, token, token_suc;\n";
+    codeStream << "    while (src_file.peek() != EOF) {\n";
+    codeStream << "        buf_suc.clear();\n";
+    codeStream << "        token_suc.clear();\n";
 
-    // 更新 currentStates 为 nextStates
-    codeStream << "        currentStates = move(nextStates);" << endl;
+    for (const auto &[name, automaton] : sdfas) {
+        codeStream << "        if (check_" << name << "(src_file, buf, token)) {\n";
+        codeStream << "            if (buf.size() > buf_suc.size()) {\n";
+        codeStream << "                buf_suc = buf;\n";
+        codeStream << "                token_suc = token;\n";
+        codeStream << "            }\n";
+        codeStream << "        }\n";
 
-    // 初始化 finalStatements 的内容
-    for (const auto &[state, dfaName] : finalStateNames) {
-        codeStream << "        finalStatements[" << state << "] = \"" << dfaName << "\";" << endl;
     }
-
-    // 检查是否进入接受状态，识别 token
-    codeStream << "        for (int state : currentStates) {" << endl;
-    codeStream << "            if (finalStatements.count(state) > 0) {" << endl;
-    codeStream << "                cout << \"Token: '\" << input.substr(tokenStart, i - tokenStart + 1) << \"' : '\" << finalStatements[state] << \"'\" << endl;" << endl;
-    codeStream << "                tokenStart = i + 1;" << endl;
-    codeStream << "                currentStates = {0};" << endl;  // 重置 currentStates
-    codeStream << "                break;" << endl;
-    codeStream << "            }" << endl;
-    codeStream << "        }" << endl;
-    codeStream << "    }" << endl;
-
-    // 检查最后的状态是否是接受状态
-    codeStream << "    bool accepted = false;" << endl;
-    codeStream << "    for (int state : currentStates) {" << endl;
-    codeStream << "        if (finalStatements.count(state) > 0) {" << endl;
-    codeStream << "            accepted = true;" << endl;
-    codeStream << "            break;" << endl;
-    codeStream << "        }" << endl;
-    codeStream << "    }" << endl;
-    codeStream << "    if (!accepted) {" << endl;
-    codeStream << "        cout << \"Not Accepted\" << endl;" << endl;
-    codeStream << "    }" << endl;
-
-    codeStream << "    return 0;" << endl;
-    codeStream << "}" << endl;
+    codeStream << "        buf.clear();\n";
+    codeStream << "        src_file.clear();\n";
+    codeStream << "        if (buf_suc.empty()) {\n";
+    codeStream << "            ans_file << \"UNKNOWN \" << buf_err << endl;\n";
+    codeStream << "            return 1;\n";
+    codeStream << "        } else {\n";
+    codeStream << "            ans_file << token_suc << \" \" << buf_suc << endl;\n";
+    codeStream << "        }\n";
+    codeStream << "        skipWhitespace(src_file);\n";
+    codeStream << "    }\n";
+    codeStream << "    return 0;\n";
+    codeStream << "    }\n";
 
     return codeStream.str();
 }
